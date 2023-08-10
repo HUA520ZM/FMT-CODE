@@ -289,6 +289,7 @@ char* toml_make_string(const char* str)
     return new_str;
 }
 
+/* Extract the key value of the 'key' and return it to 'ret' */
 int toml_string_in(const toml_table_t* tab, const char* key, char** ret)
 {
     const char* raw = toml_raw_in(tab, key);
@@ -300,6 +301,7 @@ int toml_string_in(const toml_table_t* tab, const char* key, char** ret)
     return toml_rtos(raw, ret);
 }
 
+/* Extract the key value of the 'key' and return it to 'ret' */
 int toml_int_in(const toml_table_t* tab, const char* key, int64_t* ret)
 {
     const char* raw = toml_raw_in(tab, key);

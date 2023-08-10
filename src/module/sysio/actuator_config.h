@@ -41,9 +41,9 @@ typedef struct {
 } actuator_device_info;
 
 typedef struct {
-    char* from;
-    char* to;
-    uint8_t map_size;
+    char* from;           /* control_out */
+    char* to;             /* main_out */
+    uint8_t map_size;     /* the array size of chan-map  */
     uint8_t from_map[16]; /* channel mapping start from 1 */
     uint8_t to_map[16];   /* channel mapping start from 1 */
 } actuator_mapping;

@@ -306,6 +306,7 @@ void bsp_initialize(void)
     /* adc driver init */
     RT_CHECK(drv_adc_init());
 
+    /* LED init*/
     RT_CHECK(drv_aw2023_init("i2c0_dev0"));
 
 #if defined(FMT_USING_SIH) || defined(FMT_USING_HIL)
@@ -380,7 +381,7 @@ void bsp_post_initialize(void)
     /* initialize power management unit */
     FMT_CHECK(pmu_init());
 
-    /* init led control */
+    /* init RGB-led control */
     FMT_CHECK(led_control_init());
 
     /* show system information */

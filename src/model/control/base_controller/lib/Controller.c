@@ -15,6 +15,8 @@
 
 #include "Controller.h"
 #include "Controller_private.h"
+#include "module\console\console.h"
+#include <firmament.h>
 
 const Control_Out_Bus Controller_rtZControl_Out_Bus = {
   0U,                                  /* timestamp */
@@ -905,6 +907,7 @@ void Controller_step(void)
    *  DiscreteIntegrator: '<S75>/Discrete-Time Integrator'
    *  Product: '<S76>/Multiply'
    */
+  /* 'CONTROL_PARAM.ROLL_RATE_P' is the parameter calibration value*/
   rtb_Add_g[0] = (CONTROL_PARAM.ROLL_RATE_P *
                   Controller_DW.DiscreteTimeIntegrator5_DSTATE[0] +
                   Controller_DW.DiscreteTimeIntegrator_DSTATE_o[0]) +
@@ -2514,7 +2517,8 @@ void Controller_step(void)
       if ((Controller_U.FMS_Out.ctrl_mode == 1) ||
           (Controller_U.FMS_Out.ctrl_mode == 2) ||
           (Controller_U.FMS_Out.ctrl_mode == 3)) {
-        rtb_throttle_cmd_c = Controller_U.FMS_Out.throttle_cmd;
+        rtb_throttle_cmd_c = Controller_U.FMS_Out.throttle_cmd;     //1000-2000
+        //console_printf("%d\n" , rtb_throttle_cmd_c);      
       } else if (Controller_U.FMS_Out.ctrl_mode == 6) {
         /* Switch: '<S62>/Switch' incorporates:
          *  Constant: '<S59>/Constant1'
@@ -2593,7 +2597,8 @@ void Controller_step(void)
          *  Sum: '<S59>/Sum1'
          */
         rtb_throttle_cmd_c = (uint16_T)((uint32_T)fmodf(floorf(1000.0F * u0_e),
-          4.2949673E+9F) + 1000U);
+          4.2949673E+9F) + 1000U);        //1150-1850
+        //console_printf("%d\n" , rtb_throttle_cmd_c);
       }
 
       /* End of Switch: '<S57>/Switch' */

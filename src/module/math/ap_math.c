@@ -232,6 +232,8 @@ float constrain_float(float amt, float low, float high)
     // floating point errors through any function that uses
     // constrain_float(). The normal float semantics already handle -Inf
     // and +Inf
+    //https://www.apiref.com/cpp-zh/cpp/numeric/math/isnan.html
+    
     if (isnan(amt)) {
         return (low + high) * 0.5f;
     }

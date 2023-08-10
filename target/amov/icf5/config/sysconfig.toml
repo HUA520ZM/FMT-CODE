@@ -78,6 +78,6 @@ target = "Amov-ICF5"
     freq = 400                  # pwm frequency in Hz
 
     [[actuator.mappings]]
-    from = "control_out"
+    from = "rc_channels"
     to = "main_out"
     chan-map = [[1,2,3,4],[1,2,3,4]]

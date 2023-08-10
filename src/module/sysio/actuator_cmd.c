@@ -23,6 +23,7 @@
 
 MCN_DECLARE(control_output);
 MCN_DECLARE(rc_trim_channels);
+MCN_DECLARE(rc_trim_channels_enlarge);
 
 enum {
     ACTUATOR_FROM_CONTROL_OUT,
@@ -32,6 +33,7 @@ enum {
 
 static McnNode_t _control_out_nod;
 static McnNode_t _rc_channels_nod;
+static McnNode_t _rc_trim_channels_enlarge_nod;
 static uint8_t* from_dev;
 static rt_device_t* to_dev;
 static uint8_t mapping_num;
@@ -108,10 +110,12 @@ fmt_err_t send_actuator_cmd(void)
             }
         } else if (from_dev[i] == ACTUATOR_FROM_RC_CHANNELS) {
             if (has_poll_rc_channels == false) {
-                if (mcn_poll(_rc_channels_nod) == 0) {
+                /* before: if (mcn_poll(_rc_channels_nod) == 0) { */
+                if (mcn_poll(_rc_trim_channels_enlarge_nod) == 0) {
                     return FMT_ERROR;
                 }
-                mcn_copy(MCN_HUB(rc_trim_channels), _rc_channels_nod, &rc_channel);
+                /* before: mcn_copy(MCN_HUB(rc_trim_channels), _rc_channels_nod, &rc_channel); */
+                mcn_copy(MCN_HUB(rc_trim_channels_enlarge), _rc_trim_channels_enlarge_nod, &rc_channel);
                 has_poll_rc_channels = true;
             }
 
@@ -156,8 +160,13 @@ fmt_err_t actuator_init(void)
         return FMT_ERROR;
     }
 
-    mapping_num = actuator_toml_get_mapping_num();
-    mapping_list = actuator_toml_get_mapping_list();
+    _rc_trim_channels_enlarge_nod = mcn_subscribe(MCN_HUB(rc_trim_channels_enlarge), NULL, NULL);
+    if (_rc_trim_channels_enlarge_nod == NULL) {
+        return FMT_ERROR;
+    }
+
+    mapping_num = actuator_toml_get_mapping_num();   /* number of [[actuator.mappings]] */
+    mapping_list = actuator_toml_get_mapping_list(); /* [[actuator.mappings]]:from、to、chan-map */
 
     if (mapping_num) {
         from_dev = (uint8_t*)rt_malloc(sizeof(uint8_t) * mapping_num);

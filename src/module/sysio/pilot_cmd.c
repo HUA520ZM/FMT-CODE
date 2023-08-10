@@ -25,6 +25,9 @@
 /* channel index start from 0 */
 #define CHAN_IDX(_stick_idx) (stickMapping[_stick_idx] - 1)
 
+#define FORWARD_MAPPING(_origin)      ((float)(1 + 4.998f*(_origin - 1500.0f)))
+#define BACK_MAPPING(_origin)      ((float)(1 - 4.998f*(_origin - 1500.0f)))
+
 uint8_t modeNum = 0;
 uint8_t eventCmdNum = 0;
 uint8_t statusCmdNum = 0;
@@ -36,6 +39,7 @@ static rt_device_t rcDev;
 static uint8_t stickMapping[4];
 static int16_t rcChannel[16];
 static int16_t rcTrimChannel[16];
+static int16_t rcTrimChannel_enlarge[16];
 
 static uint16_t rc_read_mask;
 static uint8_t rc_chan_num;
@@ -45,6 +49,7 @@ static Pilot_Cmd_Bus pilot_cmd_bus;
 MCN_DEFINE(pilot_cmd, sizeof(Pilot_Cmd_Bus));        /* FMS pilot command topic */
 MCN_DEFINE(rc_channels, sizeof(rcChannel));          /* RC raw channels value topic */
 MCN_DEFINE(rc_trim_channels, sizeof(rcTrimChannel)); /* RC calibrated channels value topic */
+MCN_DEFINE(rc_trim_channels_enlarge, sizeof(rcTrimChannel_enlarge)); /* Map amplified RC channels value topics */
 
 static int echo_pilot_cmd(void* parameter)
 {
@@ -139,6 +144,26 @@ static void rc_channels_trim(const int16_t raw_chan_val[], int16_t trim_chan_val
         /* calculate calibrated rc channel value, with range of [1000, 2000] */
         trim_chan_val[i] = p * 500 + 1500;
     }
+}
+
+static void rc_channels_trim_enlarge(const int16_t raw_chan_val[], int16_t trim_chan_val[])
+{
+    /* when 1500 < raw_chan_val[1] <=2000, set to forward */
+    if(raw_chan_val[1] <= 2000 && raw_chan_val[1] > 1500)
+    {
+        trim_chan_val[0] = 1;
+        trim_chan_val[1] = (int16_t)FORWARD_MAPPING(raw_chan_val[1]);
+    }else if (raw_chan_val[1] < 1500 && raw_chan_val[1] >= 1000)  // when 1000 <= raw_chan_val[1] < 1500, set to back
+    {
+        trim_chan_val[0] = (int16_t)BACK_MAPPING(raw_chan_val[1]);
+        trim_chan_val[1] = 1;
+    }else if(raw_chan_val[1] == 1500)  // when raw_chan_val[1] = 1500, set to stop
+    {
+        trim_chan_val[0] = 1;
+        trim_chan_val[1] = 1;
+    }
+    //printf("ONE=%d", trim_chan_val[0]);
+    //printf("TWO=%d\n", trim_chan_val[1]);
 }
 
 static void stick_mapping(Pilot_Cmd_Bus* pilot_cmd, const int16_t chan_val[])
@@ -299,9 +324,14 @@ fmt_err_t pilot_cmd_collect(void)
             mcn_publish(MCN_HUB(rc_channels), rcChannel);
 
             /* calibrate rc channels value */
-            rc_channels_trim(rcChannel, rcTrimChannel);
+            rc_channels_trim(rcChannel, rcTrimChannel);         
             /* publish rc_trim_channel topic */
             mcn_publish(MCN_HUB(rc_trim_channels), rcTrimChannel);
+
+            /* enlarge rc channels value map to 'rcTrimChannel_enlarge' */
+            rc_channels_trim_enlarge(rcChannel, rcTrimChannel_enlarge);
+            /* publish map amplified RC channels value topics */
+            mcn_publish(MCN_HUB(rc_trim_channels_enlarge), rcTrimChannel_enlarge);
 
             /* stick value mapping */
             stick_mapping(&pilot_cmd_bus, rcTrimChannel);
@@ -394,6 +424,7 @@ fmt_err_t pilot_cmd_init(void)
     FMT_CHECK(mcn_advertise(MCN_HUB(pilot_cmd), echo_pilot_cmd));
     FMT_CHECK(mcn_advertise(MCN_HUB(rc_channels), echo_rc_channels));
     FMT_CHECK(mcn_advertise(MCN_HUB(rc_trim_channels), echo_rc_channels));
+    FMT_CHECK(mcn_advertise(MCN_HUB(rc_trim_channels_enlarge), echo_rc_channels));
 
     return FMT_EOK;
 }

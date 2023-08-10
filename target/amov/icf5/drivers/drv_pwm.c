@@ -28,8 +28,8 @@
 #define MAX_PWM_OUT_CHAN      10            // Main Out has 10 pwm channel
 #define TIMER_FREQUENCY       2500000       // Timer frequency: 2.5M
 #define PWM_DEFAULT_FREQUENCY PWM_FREQ_50HZ // pwm default frequqncy
-#define VAL_TO_DC(_val)       ((float)(_val * __pwm_freq) / 1000000.0f)
-#define DC_TO_VAL(_dc)        (1000000.0f / __pwm_freq * _dc)
+#define VAL_TO_DC(_val)       ((float)(_val * __pwm_freq) / 1000000.0f)  //_val is remote control channel value:[1000,2000]
+#define DC_TO_VAL(_dc)        (1000000.0f / __pwm_freq * _dc)      //dc is remote control channel value corresponds to the relative value of the PWM frequency
 
 #define PWM_ARR(freq) (TIMER_FREQUENCY / freq) // CCR reload value, Timer frequency = TIMER_FREQUENCY/(PWM_ARR+1)
 
@@ -47,7 +47,7 @@ const static struct actuator_ops __act_ops = {
 
 static struct actuator_device act_dev = {
     .chan_mask = 0x3FF,
-    .range = { 1000, 2000 },
+    .range = { 1, 2500 },
     .config = {
         .protocol = ACT_PROTOCOL_PWM,
         .chan_num = MAX_PWM_OUT_CHAN,
@@ -101,16 +101,16 @@ static void pwm_timer_init(void)
     rcu_periph_clock_enable(RCU_TIMER1);
     rcu_periph_clock_enable(RCU_TIMER3);
 
-    /* When TIMERSEL is set, the TIMER clock is equal to CK_AHB(CK_TIMERx = CK_AHB) if APB1 = AHB/4, APB2 = AHB/2s. */
+    /* When TIMERSEL is set, the TIMER clock is equal to CK_AHB(CK_TIMERx = CK_AHB) =240MHz,if APB1 = AHB/4, APB2 = AHB/2s. */
     rcu_timer_clock_prescaler_config(RCU_TIMER_PSC_MUL4);
 
-    /* Timer_PSC = CK_AHB / TARGET_TIMER_CK */
+    /* Timer_PSC = CK_AHB / TARGET_TIMER_CK=95 */
     timer_psc = rcu_clock_freq_get(CK_AHB) / TIMER_FREQUENCY - 1;
-    /* Timer init parameter */
-    timer_initpara.prescaler = timer_psc;
+    /* If __pwm_freq is equal to 400Hz, the TIMER time is 2.5ms */ 
+    timer_initpara.prescaler = timer_psc;   /*95*/  
     timer_initpara.alignedmode = TIMER_COUNTER_EDGE;
     timer_initpara.counterdirection = TIMER_COUNTER_UP;
-    timer_initpara.period = PWM_ARR(__pwm_freq) - 1;
+    timer_initpara.period = PWM_ARR(__pwm_freq) - 1;  /* when __pwm_freq=400Hz,period=6249 */
     timer_initpara.clockdivision = TIMER_CKDIV_DIV1;
     timer_initpara.repetitioncounter = 0;
 
@@ -229,6 +229,7 @@ static rt_err_t __set_pwm_frequency(uint16_t freq)
 
     __pwm_freq = freq;
 
+    //set TimerX reloadvalue
     timer_autoreload_value_config(TIMER0, PWM_ARR(__pwm_freq) - 1);
     timer_autoreload_value_config(TIMER1, PWM_ARR(__pwm_freq) - 1);
     timer_autoreload_value_config(TIMER3, PWM_ARR(__pwm_freq) - 1);

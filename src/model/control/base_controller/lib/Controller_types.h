@@ -116,9 +116,10 @@ typedef struct {
 
      vehicle status:
      0: None
-     1: Disarm
-     2: Standby
-     3: Arm */
+     1: Disarm      // Locked mode
+     2: Standby     // Intermediate state between locked and unlocked
+     3: Arm         // Unlocked state
+  */   
   uint8_T status;
 
   /* enum VehicleState
