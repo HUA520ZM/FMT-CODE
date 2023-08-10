@@ -80,4 +80,4 @@ target = "Amov-ICF5"
     [[actuator.mappings]]
     from = "rc_channels"
     to = "main_out"
-    chan-map = [[1,2,3,4],[1,2,3,4]]
+    chan-map = [[1,2,3,4,5],[1,2,3,4,5]]

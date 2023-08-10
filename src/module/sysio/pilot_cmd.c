@@ -25,8 +25,9 @@
 /* channel index start from 0 */
 #define CHAN_IDX(_stick_idx) (stickMapping[_stick_idx] - 1)
 
-#define FORWARD_MAPPING(_origin)      ((float)(1 + 4.998f*(_origin - 1500.0f)))
-#define BACK_MAPPING(_origin)      ((float)(1 - 4.998f*(_origin - 1500.0f)))
+#define FORWARD_MAPPING(_origin)            ((float)(1.0f + 4.998f*(_origin - 1500.0f)))
+#define BACK_MAPPING(_origin)               ((float)(1.0f - 4.998f*(_origin - 1500.0f)))
+#define STEERING_GEAR_MAPPING(_origin)      ((float)(2500.0f - 2.0f*(_origin - 1000.0f)))
 
 uint8_t modeNum = 0;
 uint8_t eventCmdNum = 0;
@@ -148,22 +149,27 @@ static void rc_channels_trim(const int16_t raw_chan_val[], int16_t trim_chan_val
 
 static void rc_channels_trim_enlarge(const int16_t raw_chan_val[], int16_t trim_chan_val[])
 {
-    /* when 1500 < raw_chan_val[1] <=2000, set to forward */
-    if(raw_chan_val[1] <= 2000 && raw_chan_val[1] > 1500)
+    /* 1.Motor drive part */ 
+    if(raw_chan_val[1] <= 2000 && raw_chan_val[1] > 1500)           // when 1500 < raw_chan_val[1] <=2000, set to forward
     {
         trim_chan_val[0] = 1;
         trim_chan_val[1] = (int16_t)FORWARD_MAPPING(raw_chan_val[1]);
-    }else if (raw_chan_val[1] < 1500 && raw_chan_val[1] >= 1000)  // when 1000 <= raw_chan_val[1] < 1500, set to back
+    }else if (raw_chan_val[1] < 1500 && raw_chan_val[1] >= 1000)            // when 1000 <= raw_chan_val[1] < 1500, set to back
     {
         trim_chan_val[0] = (int16_t)BACK_MAPPING(raw_chan_val[1]);
         trim_chan_val[1] = 1;
-    }else if(raw_chan_val[1] == 1500)  // when raw_chan_val[1] = 1500, set to stop
+    }else if(raw_chan_val[1] == 1500)           // when raw_chan_val[1] = 1500, set to stop
     {
         trim_chan_val[0] = 1;
         trim_chan_val[1] = 1;
     }
     //printf("ONE=%d", trim_chan_val[0]);
-    //printf("TWO=%d\n", trim_chan_val[1]);
+
+    /* 2.Steering gear drive part */
+    if(raw_chan_val[0] < 2000 && raw_chan_val[0] > 1000)
+    {
+        trim_chan_val[4] = (int16_t)STEERING_GEAR_MAPPING(raw_chan_val[0]);
+    }
 }
 
 static void stick_mapping(Pilot_Cmd_Bus* pilot_cmd, const int16_t chan_val[])
@@ -330,6 +336,9 @@ fmt_err_t pilot_cmd_collect(void)
 
             /* enlarge rc channels value map to 'rcTrimChannel_enlarge' */
             rc_channels_trim_enlarge(rcChannel, rcTrimChannel_enlarge);
+            //for (int dfgfd = 0; dfgfd < 16; dfgfd++)         
+            //printf("%d\n", rcChannel[dfgfd]);
+            //printf("\n");
             /* publish map amplified RC channels value topics */
             mcn_publish(MCN_HUB(rc_trim_channels_enlarge), rcTrimChannel_enlarge);
 

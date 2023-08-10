@@ -216,7 +216,7 @@ rt_inline void __write_pwm(uint8_t chan_id, float dc)
     default:
         return;
     }
-
+    //printf("%f\n", (6250 * dc - 1));
     __pwm_dc[chan_id] = dc;
 }
 
@@ -232,7 +232,8 @@ static rt_err_t __set_pwm_frequency(uint16_t freq)
     //set TimerX reloadvalue
     timer_autoreload_value_config(TIMER0, PWM_ARR(__pwm_freq) - 1);
     timer_autoreload_value_config(TIMER1, PWM_ARR(__pwm_freq) - 1);
-    timer_autoreload_value_config(TIMER3, PWM_ARR(__pwm_freq) - 1);
+    //timer_autoreload_value_config(TIMER3, PWM_ARR(__pwm_freq) - 1);
+    timer_autoreload_value_config(TIMER3, 50000 - 1);       //Timer3 is used to control the steering gear, producing a 20ms cycle
 
     /* the timer compare value should be re-configured */
     for (uint8_t i = 0; i < MAX_PWM_OUT_CHAN; i++) {
